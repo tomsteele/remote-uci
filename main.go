@@ -43,15 +43,26 @@ func main() {
 				n, err := conn.Read(buff)
 				if err != nil {
 					log.Println("There was an error in reading from the connection")
-					conn.Close()
-					p.Process.Kill()
+					if err := conn.Close(); err != nil {
+						log.Println(err)
+					}
+					if err := p.Process.Kill(); err != nil {
+						log.Println(err)
+					}
 					break
 				}
-				stdin.Write(buff[:n])
+				if _, err := stdin.Write(buff[:n]); err != nil {
+					log.Println(err)
+				}
 			}
 		}()
 
-		go io.Copy(conn, stdout)
+		go func() {
+			if _, err := io.Copy(conn, stdout); err != nil {
+				log.Println(err)
+			}
+		}()
+
 		if err := p.Wait(); err != nil {
 			log.Printf("Process was killed with error: %s\n", err.Error())
 		}
